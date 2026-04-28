@@ -1,6 +1,6 @@
-{
-  "buildCommand": "cd client && npm install && npm run build",
-  "outputDirectory": "client/build",
+  {
+"buildCommand": "npm install && vite build",
+    "outputDirectory": "dist/public",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]

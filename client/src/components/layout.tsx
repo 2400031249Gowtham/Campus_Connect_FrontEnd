@@ -1,90 +1,122 @@
 import { ReactNode } from "react";
 import { useCurrentUser, useLogout } from "@/hooks/use-auth";
-import { LogOut, GraduationCap, User as UserIcon, Calendar, LayoutDashboard } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useLocation, Link } from "wouter";
+import { LayoutDashboard, Calendar, Users, BarChart3, User, LogOut, FolderOpen, Shield, Code2 } from "lucide-react";
+
+interface NavItem {
+  label: string;
+  icon: React.ElementType;
+  href: string;
+}
 
 export function Layout({ children }: { children: ReactNode }) {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
+  const [location] = useLocation();
 
   if (!user) return <>{children}</>;
 
+  // Role-based navigation items
+  const navItems: NavItem[] = user.role === 'admin'
+    ? [
+        { label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
+        { label: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
+        { label: 'Directory', icon: Users, href: '/admin/directory' },
+        { label: 'Teams', icon: FolderOpen, href: '/admin/teams' },
+        { label: 'Audit', icon: Shield, href: '/admin/audit-logs' },
+        { label: 'Profile', icon: User, href: '/admin/profile' },
+      ]
+    : [
+        { label: 'Dashboard', icon: LayoutDashboard, href: '/student' },
+        { label: 'Calendar', icon: Calendar, href: '/student/calendar' },
+        { label: 'Teams', icon: FolderOpen, href: '/student/teams' },
+        { label: 'Profile', icon: User, href: '/student/profile' },
+      ];
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Navigation */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-primary font-display font-bold text-xl">
-            <GraduationCap className="h-8 w-8" />
-            <span>Campus<span className="text-foreground">Connect</span></span>
-          </div>
+    <div className="min-h-screen bg-[#F9F9F9] flex flex-col font-sans text-[#111111]">
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-300">
+        <div className="container mx-auto px-4 lg:px-8 h-20 flex items-center justify-between gap-8">
+          
+          {/* Logo */}
+          <Link href={user.role === 'admin' ? '/admin' : '/student'}>
+            <a className="flex-shrink-0">
+              <span className="font-display font-bold text-2xl tracking-tighter uppercase text-[#111111]">
+                Campus<span className="opacity-40">Connect.</span>
+              </span>
+            </a>
+          </Link>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex flex-col items-end mr-2">
-              <span className="text-sm font-bold text-foreground">{user.name}</span>
-              <span className="text-xs text-muted-foreground capitalize">{user.role} Portal</span>
-            </div>
-            
-            <Avatar className="h-10 w-10 border-2 border-primary/20">
-              <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                {user.name.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-2 flex-1 justify-center">
+            {navItems.map(item => {
+              const isActive = location === item.href;
+              return (
+                <Link key={item.href} href={item.href}>
+                  <a className={`h-20 flex items-center px-4 uppercase tracking-widest text-[10px] font-bold transition-all border-b-2 ${
+                    isActive 
+                      ? 'border-black text-black' 
+                      : 'border-transparent text-[#666666] hover:text-black hover:border-gray-300'
+                  }`}>
+                    {item.label}
+                  </a>
+                </Link>
+              );
+            })}
+          </nav>
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          {/* Right Side: User & Logout */}
+          <div className="flex items-center gap-6 flex-shrink-0">
+            <Link href={user.role === 'admin' ? '/admin/profile' : '/student/profile'}>
+              <a className="flex items-center gap-3 hover:opacity-70 transition-opacity">
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs font-bold text-[#111111] uppercase tracking-tight">{user.name}</p>
+                  <p className="text-[10px] text-[#666666] uppercase tracking-widest">{user.role}</p>
+                </div>
+                <div className="h-10 w-10 bg-black text-white flex items-center justify-center font-display font-bold text-lg uppercase">
+                  {user.name.substring(0, 2)}
+                </div>
+              </a>
+            </Link>
+
+            <div className="h-8 w-px bg-gray-300 hidden sm:block"></div>
+
+            <button
               onClick={() => logout.mutate()}
+              className="text-[#666666] hover:text-black transition-colors flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold"
               title="Logout"
             >
-              <LogOut className="h-5 w-5" />
-            </Button>
+              <LogOut strokeWidth={1.5} className="h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
+        </div>
+        
+        {/* Mobile Navigation (Scrollable horizontal list) */}
+        <div className="md:hidden w-full border-t border-gray-300 overflow-x-auto bg-white">
+          <nav className="flex px-4 min-w-max">
+            {navItems.map(item => {
+              const isActive = location === item.href;
+              return (
+                <Link key={item.href} href={item.href}>
+                  <a className={`flex-shrink-0 h-14 flex items-center px-4 uppercase tracking-widest text-[10px] font-bold transition-all border-b-2 ${
+                    isActive 
+                      ? 'border-black text-black' 
+                      : 'border-transparent text-[#666666] hover:text-black'
+                  }`}>
+                    {item.label}
+                  </a>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex flex-col md:flex-row gap-8">
-          
-          {/* Subtle Side Navigation */}
-          <aside className="w-full md:w-64 shrink-0 space-y-2">
-            <div className="p-4 rounded-2xl bg-card border shadow-sm flex flex-col gap-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 px-2">Navigation</h3>
-              
-              <Button variant="secondary" className="justify-start gap-3 w-full">
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Button>
-              
-              {user.role === 'admin' ? (
-                <Button variant="ghost" className="justify-start gap-3 w-full opacity-50 cursor-not-allowed" title="Coming Soon">
-                  <UserIcon className="h-4 w-4" />
-                  Directory
-                </Button>
-              ) : (
-                <Button variant="ghost" className="justify-start gap-3 w-full opacity-50 cursor-not-allowed" title="Coming Soon">
-                  <Calendar className="h-4 w-4" />
-                  My Calendar
-                </Button>
-              )}
-            </div>
-
-            {/* Fun little decorative card */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-lg mt-6 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-[url('https://pixabay.com/get/g1152b77b75effacb4f880cbc00c47fb75616a81ae79c1cea4fb5d9a28e9482ffbf7dae133301e5508eaea8920e08d4937869646ce47102faf21a9b15bd0c4812_1280.jpg')] opacity-10 mix-blend-overlay bg-cover bg-center transition-transform duration-700 group-hover:scale-110"></div>
-              <h3 className="font-display font-bold text-lg mb-1 relative z-10">Stay Active!</h3>
-              <p className="text-sm opacity-90 relative z-10">Students in 2+ clubs report 40% higher satisfaction.</p>
-            </div>
-          </aside>
-
-          {/* Page Content */}
-          <div className="flex-1 min-w-0">
-            {children}
-          </div>
-        </div>
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 lg:px-8 py-8 lg:py-12 relative z-10">
+        {children}
       </main>
     </div>
   );

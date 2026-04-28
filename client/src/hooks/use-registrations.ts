@@ -1,12 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { localDb } from "../lib/storage";
-import { type InsertRegistration } from "@shared/schema";
+import { type InsertRegistration, type Registration } from "@shared/schema";
 import { useToast } from "./use-toast";
+import { apiRequest } from "../lib/queryClient";
 
 export function useRegistrations() {
-  return useQuery({
-    queryKey: ["registrations"],
-    queryFn: () => localDb.getRegistrations(),
+  return useQuery<Registration[]>({
+    queryKey: ["/api/registrations"],
   });
 }
 
@@ -15,9 +14,12 @@ export function useCreateRegistration() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (data: InsertRegistration) => localDb.createRegistration(data),
+    mutationFn: async (data: InsertRegistration) => {
+      const res = await apiRequest("POST", "/api/registrations", data);
+      return res.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["registrations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/registrations"] });
       toast({ title: "Successfully registered!" });
     },
     onError: (error: Error) => {
@@ -31,10 +33,12 @@ export function useUpdateRegistrationStatus() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) => 
-      localDb.updateRegistrationStatus(id, status),
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const res = await apiRequest("PATCH", `/api/registrations/${id}`, { status });
+      return res.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["registrations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/registrations"] });
       toast({ title: "Status updated successfully" });
     },
   });
@@ -45,10 +49,13 @@ export function useDeleteRegistration() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (id: number) => localDb.deleteRegistration(id),
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/registrations/${id}`);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["registrations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/registrations"] });
       toast({ title: "Registration cancelled" });
     },
   });
 }
+     

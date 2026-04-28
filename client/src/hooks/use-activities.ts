@@ -1,12 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { localDb } from "../lib/storage";
-import { type InsertActivity } from "@shared/schema";
+import { type InsertActivity, type Activity } from "@shared/schema";
 import { useToast } from "./use-toast";
+import { apiRequest } from "../lib/queryClient";
 
 export function useActivities() {
-  return useQuery({
-    queryKey: ["activities"],
-    queryFn: () => localDb.getActivities(),
+  return useQuery<Activity[]>({
+    queryKey: ["/api/activities"],
   });
 }
 
@@ -15,9 +14,12 @@ export function useCreateActivity() {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: (data: InsertActivity) => localDb.createActivity(data),
+    mutationFn: async (data: InsertActivity) => {
+      const res = await apiRequest("POST", "/api/activities", data);
+      return res.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["activities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
       toast({ title: "Activity created successfully" });
     },
     onError: (error: Error) => {
@@ -31,10 +33,12 @@ export function useUpdateActivity() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: number; updates: Partial<InsertActivity> }) => 
-      localDb.updateActivity(id, updates),
+    mutationFn: async ({ id, updates }: { id: number; updates: Partial<InsertActivity> }) => {
+      const res = await apiRequest("PATCH", `/api/activities/${id}`, updates);
+      return res.json();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["activities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
       toast({ title: "Activity updated successfully" });
     },
   });
@@ -45,10 +49,12 @@ export function useDeleteActivity() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (id: number) => localDb.deleteActivity(id),
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/activities/${id}`);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["activities"] });
-      queryClient.invalidateQueries({ queryKey: ["registrations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/registrations"] });
       toast({ title: "Activity deleted successfully" });
     },
   });
